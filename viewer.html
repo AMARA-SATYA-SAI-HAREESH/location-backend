@@ -1,0 +1,278 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Data Viewer</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial;
+        background: #f0f0f0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+      }
+      h1 {
+        color: #333;
+        margin-bottom: 20px;
+      }
+      .controls {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+      button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .refresh {
+        background: #4caf50;
+        color: white;
+      }
+      .clear {
+        background: #f44336;
+        color: white;
+      }
+      .download {
+        background: #2196f3;
+        color: white;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+      }
+      th,
+      td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+      th {
+        background: #f5f5f5;
+        font-weight: bold;
+      }
+      tr:hover {
+        background: #f9f9f9;
+      }
+      .status-success {
+        color: green;
+        font-weight: bold;
+      }
+      .status-blocked {
+        color: red;
+        font-weight: bold;
+      }
+      .empty {
+        text-align: center;
+        padding: 40px;
+        color: #666;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>📍 Tracking Data Viewer</h1>
+
+      <div class="controls">
+        <button class="refresh" onclick="loadData()">🔄 Refresh Data</button>
+        <button class="download" onclick="downloadData()">
+          📥 Download JSON
+        </button>
+        <button class="clear" onclick="clearData()">🗑️ Clear All Data</button>
+        <span id="status" style="margin-left: auto; color: #666"></span>
+      </div>
+
+      <div id="dataContainer">
+        <table id="dataTable">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>IP Address</th>
+              <th>Location</th>
+              <th>Accuracy</th>
+              <th>Device</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="dataBody">
+            <!-- Data will load here -->
+          </tbody>
+        </table>
+        <div id="emptyState" class="empty" style="display: none">
+          <h3>📭 No Data Available</h3>
+          <p>No tracking data has been collected yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const API_URL = "http://localhost:3000";
+
+      // Load data on page load
+      document.addEventListener("DOMContentLoaded", loadData);
+
+      // Auto-refresh every 5 seconds
+      setInterval(loadData, 5000);
+
+      async function loadData() {
+        try {
+          document.getElementById("status").textContent = "Loading...";
+
+          const response = await fetch(`${API_URL}/get-data`);
+          const data = await response.json();
+
+          displayData(data);
+          document.getElementById("status").textContent =
+            `Last updated: ${new Date().toLocaleTimeString()} | Total: ${data.length}`;
+        } catch (error) {
+          console.error("Error:", error);
+          document.getElementById("status").textContent = "Error loading data";
+          showMessage(
+            "⚠️ Cannot connect to server. Make sure server is running on port 3000.",
+            "error",
+          );
+        }
+      }
+
+      function displayData(data) {
+        const tbody = document.getElementById("dataBody");
+        const emptyState = document.getElementById("emptyState");
+
+        if (!data || data.length === 0) {
+          tbody.innerHTML = "";
+          emptyState.style.display = "block";
+          return;
+        }
+
+        emptyState.style.display = "none";
+
+        let html = "";
+        data.forEach((entry) => {
+          const isSuccess = entry.latitude !== "Blocked";
+
+          html += `
+                <tr>
+                    <td>${entry.timestamp}</td>
+                    <td><strong>${entry.ip}</strong></td>
+                    <td>
+                        ${
+                          isSuccess
+                            ? `<a href="https://maps.google.com/?q=${entry.latitude},${entry.longitude}" 
+                               target="_blank" style="color:#2196F3;">
+                                📍 ${entry.latitude}, ${entry.longitude}
+                            </a>`
+                            : '<span class="status-blocked">📍 Blocked</span>'
+                        }
+                    </td>
+                    <td>${entry.accuracy || "N/A"}</td>
+                    <td><small>${truncateText(entry.userAgent, 40)}</small></td>
+                    <td class="${isSuccess ? "status-success" : "status-blocked"}">
+                        ${isSuccess ? "✅ Success" : "❌ Blocked"}
+                    </td>
+                </tr>
+                `;
+        });
+
+        tbody.innerHTML = html;
+      }
+
+      async function clearData() {
+        if (
+          !confirm(
+            "Are you sure you want to delete ALL tracking data? This cannot be undone.",
+          )
+        ) {
+          return;
+        }
+
+        try {
+          const response = await fetch(`${API_URL}/clear-data`);
+          const result = await response.json();
+
+          if (result.success) {
+            showMessage("✅ All data cleared successfully!", "success");
+            loadData();
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          showMessage("❌ Failed to clear data", "error");
+        }
+      }
+
+      async function downloadData() {
+        try {
+          const response = await fetch(`${API_URL}/get-data`);
+          const data = await response.json();
+
+          if (data.length === 0) {
+            showMessage("⚠️ No data to download", "error");
+            return;
+          }
+
+          const blob = new Blob([JSON.stringify(data, null, 2)], {
+            type: "application/json",
+          });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = `tracking-data-${new Date().toISOString().split("T")[0]}.json`;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+
+          showMessage(`✅ Downloaded ${data.length} records`, "success");
+        } catch (error) {
+          console.error("Error:", error);
+          showMessage("❌ Failed to download data", "error");
+        }
+      }
+
+      function truncateText(text, maxLength) {
+        if (!text) return "";
+        return text.length > maxLength
+          ? text.substring(0, maxLength) + "..."
+          : text;
+      }
+
+      function showMessage(text, type) {
+        // Create message element
+        const msg = document.createElement("div");
+        msg.textContent = text;
+        msg.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px;
+                border-radius: 5px;
+                color: white;
+                background: ${type === "success" ? "#4CAF50" : "#f44336"};
+                z-index: 1000;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            `;
+
+        document.body.appendChild(msg);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+          document.body.removeChild(msg);
+        }, 3000);
+      }
+
+      // Initial load
+      loadData();
+    </script>
+  </body>
+</html>
