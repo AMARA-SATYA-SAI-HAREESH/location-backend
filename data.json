@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": "1769857411457bfojqf8ru",
+    "timestamp": "Jan 31, 2026, 04:33:31 PM",
+    "ip": "::1",
+    "latitude": "15.513019708044837",
+    "longitude": "80.03655223988633",
+    "accuracy": "253m",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/144.0.0.0 Safari/537.36 Edg/144.0.0.0",
+    "screenSize": "1536x864",
+    "referer": "http://localhost:3000/",
+    "status": "success",
+    "error": "none",
+    "visitTime": "2026-01-31T11:03:31.403Z"
+  }
+]

